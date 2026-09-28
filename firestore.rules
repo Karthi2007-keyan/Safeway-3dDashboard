@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Root Vehicles collection & telemetry document
+    match /vehicles/{vehicleId} {
+      // Allow read for live cockpit dashboard streaming
+      allow read: if true;
+      
+      // Allow create and update from IoT Gateway and Dashboard
+      allow create, update: if true;
+      allow delete: if false;
+
+      // Telemetry Historical Subcollection
+      match /telemetry/{telemetryId} {
+        allow read: if true;
+        allow create: if request.resource.data.keys().hasAll(['timestamp', 'system', 'adxl345', 'gp2y1010au0f']);
+        allow update, delete: if false;
+      }
+
+      // Automated Emergency Hazard Alerts Subcollection
+      match /alerts/{alertId} {
+        allow read: if true;
+        allow create: if request.resource.data.keys().hasAll(['type', 'severity', 'message', 'sensor']);
+        allow update: if true;
+        allow delete: if false;
+      }
+
+      // Vehicle-to-Vehicle (V2V) NRF24L01 Mesh Nodes Subcollection
+      match /v2v_nodes/{nodeId} {
+        allow read: if true;
+        allow create, update: if request.resource.data.distanceMeters is number;
+        allow delete: if true;
+      }
+
+      // ESP32-CAM AI Vision Feed Subcollection
+      match /camera_feeds/{cameraId} {
+        allow read: if true;
+        allow create, update: if request.resource.data.fps is number;
+        allow delete: if false;
+      }
+    }
+
+  }
+}
